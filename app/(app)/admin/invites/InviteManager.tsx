@@ -5,23 +5,50 @@ import { useRouter } from "next/navigation";
 import { createInvite } from "../actions";
 import { IconLink, IconCopy, IconCheck } from "@/components/Icons";
 
+async function copyToClipboard(text: string): Promise<boolean> {
+  // Preferred path — only available in secure contexts (https / localhost).
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    /* fall through to legacy path */
+  }
+  // Legacy fallback for http / older browsers.
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "0";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
+  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
   return (
     <button
-      className="btn btn-ghost btn-sm"
+      type="button"
+      className={`btn btn-sm ${state === "failed" ? "btn-danger" : "btn-ghost"}`}
       onClick={async () => {
-        try {
-          await navigator.clipboard.writeText(text);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1800);
-        } catch {
-          /* clipboard unavailable */
-        }
+        const ok = await copyToClipboard(text);
+        setState(ok ? "copied" : "failed");
+        setTimeout(() => setState("idle"), 2000);
       }}
     >
-      {copied ? <IconCheck width={15} height={15} /> : <IconCopy width={15} height={15} />}
-      {copied ? "Copied" : "Copy"}
+      {state === "copied" ? <IconCheck width={15} height={15} /> : <IconCopy width={15} height={15} />}
+      {state === "copied" ? "Copied" : state === "failed" ? "Select & copy" : "Copy"}
     </button>
   );
 }
