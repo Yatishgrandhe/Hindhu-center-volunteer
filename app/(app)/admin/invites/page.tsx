@@ -60,11 +60,8 @@ export default async function InvitesPage() {
                       <td className="soft">{formatDateTime(inv.created_at)}</td>
                       <td className="soft">{formatDateTime(inv.expires_at)}</td>
                       <td>
-                        <span
-                          className={`badge ${
-                            used ? "badge-approved" : revoked || expired ? "badge-no_show" : "badge-open"
-                          }`}
-                        >
+                        {/* Green only when the link still works; used / disabled / expired are all red. */}
+                        <span className={`badge ${active ? "badge-open" : "badge-no_show"}`}>
                           {used ? "Used" : revoked ? "Disabled" : expired ? "Expired" : "Active"}
                         </span>
                       </td>
