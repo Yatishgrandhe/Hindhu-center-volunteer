@@ -153,3 +153,38 @@ export async function createInvite(): Promise<{ ok: boolean; token?: string; err
   revalidatePath("/admin/invites");
   return { ok: true, token: data.token };
 }
+
+// Disable a single admin invite link so it can no longer be redeemed.
+export async function revokeInvite(id: string): Promise<{ ok: boolean; error?: string }> {
+  const { supabase, user, isAdmin } = await requireAdmin();
+  if (!user || !isAdmin) return { ok: false, error: "Not authorized." };
+
+  const { error } = await supabase
+    .from("admin_invites")
+    .update({ revoked_at: new Date().toISOString() })
+    .eq("id", id)
+    .is("revoked_at", null)
+    .is("used_at", null);
+
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin/invites");
+  return { ok: true };
+}
+
+// Disable every still-active (unused, unexpired, not-yet-revoked) invite link.
+export async function revokeAllInvites(): Promise<{ ok: boolean; error?: string; count?: number }> {
+  const { supabase, user, isAdmin } = await requireAdmin();
+  if (!user || !isAdmin) return { ok: false, error: "Not authorized." };
+
+  const { data, error } = await supabase
+    .from("admin_invites")
+    .update({ revoked_at: new Date().toISOString() })
+    .is("revoked_at", null)
+    .is("used_at", null)
+    .gt("expires_at", new Date().toISOString())
+    .select("id");
+
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin/invites");
+  return { ok: true, count: data?.length ?? 0 };
+}

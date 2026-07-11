@@ -18,6 +18,7 @@ export type Database = {
           created_by: string | null
           expires_at: string
           id: string
+          revoked_at: string | null
           token: string
           used_at: string | null
           used_by: string | null
@@ -27,6 +28,7 @@ export type Database = {
           created_by?: string | null
           expires_at?: string
           id?: string
+          revoked_at?: string | null
           token?: string
           used_at?: string | null
           used_by?: string | null
@@ -36,6 +38,7 @@ export type Database = {
           created_by?: string | null
           expires_at?: string
           id?: string
+          revoked_at?: string | null
           token?: string
           used_at?: string | null
           used_by?: string | null

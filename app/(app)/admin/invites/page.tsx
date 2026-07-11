@@ -2,6 +2,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { InviteManager } from "./InviteManager";
+import { RevokeButton, RevokeAllButton } from "./RevokeControls";
 import { IconArrow } from "@/components/Icons";
 import { formatDateTime } from "@/lib/utils";
 
@@ -16,10 +17,13 @@ export default async function InvitesPage() {
 
   const { data: invites } = await supabase
     .from("admin_invites")
-    .select("id, token, created_at, expires_at, used_at")
+    .select("id, token, created_at, expires_at, used_at, revoked_at")
     .order("created_at", { ascending: false });
 
   const now = Date.now();
+  const activeCount = (invites ?? []).filter(
+    (inv) => !inv.used_at && !inv.revoked_at && new Date(inv.expires_at).getTime() >= now
+  ).length;
 
   return (
     <div className="page">
@@ -34,6 +38,7 @@ export default async function InvitesPage() {
 
         <div className="section-head" style={{ marginTop: "2.2rem" }}>
           <div><span className="eyebrow">History</span><h2>Invite links</h2></div>
+          <RevokeAllButton activeCount={activeCount} />
         </div>
 
         {!invites || invites.length === 0 ? (
@@ -42,24 +47,32 @@ export default async function InvitesPage() {
           <div className="table-wrap">
             <table className="data">
               <thead>
-                <tr><th>Created</th><th>Expires</th><th>Status</th><th></th></tr>
+                <tr><th>Created</th><th>Expires</th><th>Status</th><th>Link</th><th style={{ textAlign: "right" }}></th></tr>
               </thead>
               <tbody>
                 {invites.map((inv) => {
                   const used = !!inv.used_at;
-                  const expired = !used && new Date(inv.expires_at).getTime() < now;
-                  const active = !used && !expired;
+                  const revoked = !used && !!inv.revoked_at;
+                  const expired = !used && !revoked && new Date(inv.expires_at).getTime() < now;
+                  const active = !used && !revoked && !expired;
                   return (
                     <tr key={inv.id}>
                       <td className="soft">{formatDateTime(inv.created_at)}</td>
                       <td className="soft">{formatDateTime(inv.expires_at)}</td>
                       <td>
-                        <span className={`badge ${used ? "badge-approved" : expired ? "badge-no_show" : "badge-open"}`}>
-                          {used ? "Used" : expired ? "Expired" : "Active"}
+                        <span
+                          className={`badge ${
+                            used ? "badge-approved" : revoked || expired ? "badge-no_show" : "badge-open"
+                          }`}
+                        >
+                          {used ? "Used" : revoked ? "Disabled" : expired ? "Expired" : "Active"}
                         </span>
                       </td>
                       <td className="soft" style={{ fontFamily: "monospace", fontSize: "0.78rem" }}>
                         {active ? `${origin}/join/${inv.token}` : `…${inv.token.slice(-8)}`}
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        {active && <RevokeButton id={inv.id} />}
                       </td>
                     </tr>
                   );
