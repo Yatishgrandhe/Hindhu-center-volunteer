@@ -3,7 +3,26 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { revokeInvite, revokeAllInvites } from "../actions";
-import { IconX } from "@/components/Icons";
+import { copyToClipboard } from "@/lib/clipboard";
+import { IconX, IconCopy, IconCheck } from "@/components/Icons";
+
+export function CopyLinkButton({ link }: { link: string }) {
+  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
+  return (
+    <button
+      type="button"
+      className={`btn btn-sm ${state === "failed" ? "btn-danger" : "btn-ghost"}`}
+      onClick={async () => {
+        const ok = await copyToClipboard(link);
+        setState(ok ? "copied" : "failed");
+        setTimeout(() => setState("idle"), 2000);
+      }}
+    >
+      {state === "copied" ? <IconCheck width={14} height={14} /> : <IconCopy width={14} height={14} />}
+      {state === "copied" ? "Copied" : state === "failed" ? "Failed" : "Copy link"}
+    </button>
+  );
+}
 
 export function RevokeButton({ id }: { id: string }) {
   const [pending, start] = useTransition();

@@ -3,37 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createInvite } from "../actions";
+import { copyToClipboard } from "@/lib/clipboard";
 import { IconLink, IconCopy, IconCheck } from "@/components/Icons";
-
-async function copyToClipboard(text: string): Promise<boolean> {
-  // Preferred path — only available in secure contexts (https / localhost).
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch {
-    /* fall through to legacy path */
-  }
-  // Legacy fallback for http / older browsers.
-  try {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.setAttribute("readonly", "");
-    ta.style.position = "fixed";
-    ta.style.top = "0";
-    ta.style.left = "-9999px";
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
-    ta.setSelectionRange(0, text.length);
-    const ok = document.execCommand("copy");
-    document.body.removeChild(ta);
-    return ok;
-  } catch {
-    return false;
-  }
-}
 
 function CopyButton({ text }: { text: string }) {
   const [state, setState] = useState<"idle" | "copied" | "failed">("idle");

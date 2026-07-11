@@ -2,7 +2,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { InviteManager } from "./InviteManager";
-import { RevokeButton, RevokeAllButton } from "./RevokeControls";
+import { RevokeButton, RevokeAllButton, CopyLinkButton } from "./RevokeControls";
 import { IconArrow } from "@/components/Icons";
 import { formatDateTime } from "@/lib/utils";
 
@@ -47,7 +47,7 @@ export default async function InvitesPage() {
           <div className="table-wrap">
             <table className="data">
               <thead>
-                <tr><th>Created</th><th>Expires</th><th>Status</th><th>Link</th><th style={{ textAlign: "right" }}></th></tr>
+                <tr><th>Created</th><th>Expires</th><th>Status</th><th style={{ textAlign: "right" }}>Actions</th></tr>
               </thead>
               <tbody>
                 {invites.map((inv) => {
@@ -57,19 +57,23 @@ export default async function InvitesPage() {
                   const active = !used && !revoked && !expired;
                   return (
                     <tr key={inv.id}>
-                      <td className="soft">{formatDateTime(inv.created_at)}</td>
-                      <td className="soft">{formatDateTime(inv.expires_at)}</td>
+                      <td className="soft" style={{ whiteSpace: "nowrap" }}>{formatDateTime(inv.created_at)}</td>
+                      <td className="soft" style={{ whiteSpace: "nowrap" }}>{formatDateTime(inv.expires_at)}</td>
                       <td>
                         {/* Green only when the link still works; used / disabled / expired are all red. */}
                         <span className={`badge ${active ? "badge-open" : "badge-no_show"}`}>
                           {used ? "Used" : revoked ? "Disabled" : expired ? "Expired" : "Active"}
                         </span>
                       </td>
-                      <td className="soft" style={{ fontFamily: "monospace", fontSize: "0.78rem" }}>
-                        {active ? `${origin}/join/${inv.token}` : `…${inv.token.slice(-8)}`}
-                      </td>
-                      <td style={{ textAlign: "right" }}>
-                        {active && <RevokeButton id={inv.id} />}
+                      <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                        {active ? (
+                          <span className="row gap-sm" style={{ justifyContent: "flex-end" }}>
+                            <CopyLinkButton link={`${origin}/join/${inv.token}`} />
+                            <RevokeButton id={inv.id} />
+                          </span>
+                        ) : (
+                          <span className="muted" style={{ fontFamily: "monospace", fontSize: "0.78rem" }}>…{inv.token.slice(-8)}</span>
+                        )}
                       </td>
                     </tr>
                   );
